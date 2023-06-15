@@ -5,6 +5,7 @@ import json
 
 individual_data = []
 team_data = []
+team_members = []
 selected_individual = None
 selected_team = None
 event_data = ["Reading", "Longest Coder", "Chicken Broth", "Jumping Big", "MurMys"]
@@ -33,24 +34,32 @@ def load_team_data():
         team_data = []
 
 def register_individual():
+    if len(individual_data) >= 20:
+        messagebox.showerror("Error", "Maximum team limit reached (maximum is 4 teams).")
+        return
+    
     individual_window = tk.Toplevel(window)
     individual_window.title("Individual Registration")
 
     label_heading = tk.Label(individual_window, text="Individual Registration", font=("Arial", 16, "bold"))
     label_heading.pack(pady=10)
 
-    def submit_registration():
-        name = entry_name.get()
-        score = entry_score.get()
-        event = dropdown_event.get()
+def submit_registration():
+    team_name = entry_team_name.get()
+    members = entry_team_members.get().split(",")
+    event = dropdown_event.get()
 
-        individual = {"name": name, "score": score, "event": event}
-        individual_data.append(individual)
-        json_data = json.dumps(individual_data)
-        with open("individual_data.json", "w") as file:
-            file.write(json_data)
-        messagebox.showinfo("Registration", "Individual registration successful!")
-        individual_window.destroy()
+    if len(members) > 5:
+        messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
+        return
+
+    team = {"team_name": team_name, "members": members, "total_score": 0, "event": event}
+    team_data.append(team)
+    json_data = json.dumps(team_data)
+    with open("team_data.json", "w") as file:
+        file.write(json_data)
+    messagebox.showinfo("Registration", "Team registration successful!")
+    team_window.destroy()
 
     label_name = tk.Label(individual_window, text="Name:")
     label_name.pack()
@@ -73,6 +82,10 @@ def register_individual():
     button_submit.pack(pady=10)
 
 def register_team():
+    if len(team_data) >= 4:
+        messagebox.showerror("Error", "Maximum team limit reached (maximum is 4 teams).")
+        return
+    
     team_window = tk.Toplevel(window)
     team_window.title("Team Registration")
 
@@ -83,6 +96,18 @@ def register_team():
         team_name = entry_team_name.get()
         team_members = entry_team_members.get().split(",")
         event = dropdown_event.get()
+
+        if len(team_members) > 5:
+            messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
+            return
+        
+        if len(team_members) < 5:
+            messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
+            return
+        
+        if len(team_name) > 4:
+            messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
+            return
 
         team = {"team_name": team_name, "members": team_members, "total_score": 0, "event": event}
         team_data.append(team)
