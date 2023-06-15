@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import messagebox
+from operator import itemgetter
 import json
 
 individual_data = []
 team_data = []
 selected_individual = None
 selected_team = None
+event_data = ["Reading", "Longest Coder", "Chicken Broth", "Jumping Big", "MurMys"]
 
 def load_individual_data():
     global individual_data
@@ -40,8 +42,9 @@ def register_individual():
     def submit_registration():
         name = entry_name.get()
         score = entry_score.get()
+        event = dropdown_event.get()
 
-        individual = {"name": name, "score": score}
+        individual = {"name": name, "score": score, "event": event}
         individual_data.append(individual)
         json_data = json.dumps(individual_data)
         with open("individual_data.json", "w") as file:
@@ -59,6 +62,13 @@ def register_individual():
     entry_score = tk.Entry(individual_window)
     entry_score.pack()
 
+    label_event = tk.Label(individual_window, text="Event:")
+    label_event.grid(row=i+1, column=0, sticky="w")
+    dropdown_event = tk.StringVar(individual_window)
+    dropdown_event.set("Select Event")
+    dropdown_menu_event = tk.OptionMenu(individual_window, dropdown_event, "Reading", "Longest Coder", "Chicken Broth", "Jumping Big", "MurMys")
+    dropdown_menu_event.pack()
+
     button_submit = tk.Button(individual_window, text="Submit", command=submit_registration)
     button_submit.pack(pady=10)
 
@@ -72,8 +82,9 @@ def register_team():
     def submit_registration():
         team_name = entry_team_name.get()
         team_members = entry_team_members.get().split(",")
+        event = dropdown_event.get()
 
-        team = {"team_name": team_name, "members": team_members, "total_score": 0}
+        team = {"team_name": team_name, "members": team_members, "total_score": 0, "event": event}
         team_data.append(team)
         json_data = json.dumps(team_data)
         with open("team_data.json", "w") as file:
@@ -90,6 +101,13 @@ def register_team():
     label_team_members.pack()
     entry_team_members = tk.Entry(team_window)
     entry_team_members.pack()
+
+    label_event = tk.Label(team_window, text="Event:")
+    label_event.pack()
+    dropdown_event = tk.StringVar(team_window)
+    dropdown_event.set("Select Event")
+    dropdown_menu_event = tk.OptionMenu(team_window, dropdown_event, "Reading", "Longest Cod", "Chicken Broth", "Jumping Big", "MurMys")
+    dropdown_menu_event.pack()
 
     button_submit = tk.Button(team_window, text="Submit", command=submit_registration)
     button_submit.pack(pady=10)
@@ -125,6 +143,55 @@ def display_teams():
 
         label_team_divider = tk.Label(teams_window, text="-----------------------------")
         label_team_divider.pack(pady=5)
+
+def rank_teams():
+    sorted_teams = sorted(team_data, key=itemgetter('total_score'), reverse=True)
+    top_three_teams = sorted_teams[:3]
+    rank_window = tk.Toplevel(window)
+    rank_window.title("Top Three Teams")
+
+    label_heading = tk.Label(rank_window, text="Top Three Teams", font=("Arial", 16, "bold"))
+    label_heading.grid(row=0, column=0, columnspan=3, pady=10)
+
+    for i, team in enumerate(top_three_teams):
+        label_team_name = tk.Label(rank_window, text=f"{i+1}. {team['team_name']} ({team['event']})")
+        label_team_name.grid(row=i+1, column=0, sticky="w")
+
+        label_team_members = tk.Label(rank_window, text=f"Team Members: {', '.join(team['members'])}")
+        label_team_members.grid(row=i+1, column=1, sticky="w")
+
+        label_total_score = tk.Label(rank_window, text=f"Total Score: {team['total_score']}")
+        label_total_score.grid(row=i+1, column=2, sticky="w")
+
+        label_separator = tk.Label(rank_window, text="-" * 20)
+        label_separator.grid(row=i+2, column=0, columnspan=3, pady=5)
+
+
+def rank_individuals():
+    rank_window = tk.Toplevel(window)
+    rank_window.title("Top Three Individuals")
+
+    label_heading = tk.Label(rank_window, text="Top Three Individuals", font=("Arial", 16, "bold"))
+    label_heading.pack(pady=10)
+
+    event_set = set(individual['event'] for individual in individual_data)
+    for event in event_set:
+        event_individuals = [individual for individual in individual_data if individual['event'] == event]
+        sorted_individuals = sorted(event_individuals, key=itemgetter('score'), reverse=True)
+        top_three_individuals = sorted_individuals[:3]
+
+        label_event = tk.Label(rank_window, text=f"Event: {event}", font=("Arial", 12, "bold"))
+        label_event.pack()
+
+        for i, individual in enumerate(top_three_individuals):
+            label_name = tk.Label(rank_window, text=f"{i+1}. {individual['name']}")
+            label_name.pack()
+
+            label_score = tk.Label(rank_window, text=f"Score: {individual['score']}")
+            label_score.pack()
+
+            label_separator = tk.Label(rank_window, text="-" * 20)
+            label_separator.pack()
 
 def update_individual_scores():
     individuals_window = tk.Toplevel(window)
@@ -199,37 +266,30 @@ def update_team_scores():
     button_submit.pack(pady=10)
 
 def assign_to_event():
-    global selected_individual, selected_team
+    name = entry_assign_name.get()
+    selected_event = dropdown_event_assignment.get()
+    selected_individual = None
+    selected_team = None
 
-    assign_name = entry_assign_name.get().strip()
-    event_individual = dropdown_individual.get()
-    event_team = dropdown_team.get()
+    # Find the selected individual or team
+    for individual in individual_data:
+        if individual['name'] == name:
+            selected_individual = individual
+            break
 
-    if assign_name == "":
-        messagebox.showerror("Error", "Please enter an individual/team name.")
-        return
+    for team in team_data:
+        if team['team_name'] == name:
+            selected_team = team
+            break
 
-    if event_individual != "Select Event":
-        individual = next((ind for ind in individual_data if ind["name"] == assign_name), None)
-        if individual is None:
-            messagebox.showerror("Error", "Selected individual not found.")
-        else:
-            individual[event_individual] = assign_name
-            messagebox.showinfo("Success", "Individual assigned to event successfully.")
-            selected_individual = None
-
-    elif event_team != "Select Event":
-        team = next((team for team in team_data if team["team_name"] == assign_name), None)
-        if team is None:
-            messagebox.showerror("Error", "Selected team not found.")
-        else:
-            team[event_team] = assign_name
-            messagebox.showinfo("Success", "Team assigned to event successfully.")
-            selected_team = None
-
-    entry_assign_name.delete(0, tk.END)
-    dropdown_individual.set("Select Event")
-    dropdown_team.set("Select Event")
+    if selected_individual:
+        selected_individual['event'] = selected_event
+        messagebox.showinfo("Assignment", f"{selected_individual['name']} assigned to {selected_event}")
+    elif selected_team:
+        selected_team['event'] = selected_event
+        messagebox.showinfo("Assignment", f"{selected_team['team_name']} assigned to {selected_event}")
+    else:
+        messagebox.showerror("Error", "No individual or team found with the specified name")
 
 def assign_individual_or_team():
     global selected_individual, selected_team
@@ -240,7 +300,7 @@ def assign_individual_or_team():
             messagebox.showerror("Error", "Please select an event.")
         else:
             messagebox.showinfo("Assign Individual", f"Event: {selected_event}\nIndividual: {selected_individual}")
-            assign_name = selected_individual
+            assign_name = selected_individual["name"]
             event = selected_event
 
             individual = next((ind for ind in individual_data if ind["name"] == assign_name), None)
@@ -290,42 +350,47 @@ button_register_team = tk.Button(window, text="Register Team", command=register_
 button_register_team.grid(row=1, column=1, padx=10, pady=5)
 
 button_display_individuals = tk.Button(window, text="Display Individuals", command=display_individuals)
-button_display_individuals.grid(row=1, column=2, padx=10, pady=5)
+button_display_individuals.grid(row=2, column=1, padx=10, pady=5)
 
 button_display_teams = tk.Button(window, text="Display Teams", command=display_teams)
 button_display_teams.grid(row=2, column=0, padx=10, pady=5)
 
 button_update_individual_scores = tk.Button(window, text="Update Individual Scores", command=update_individual_scores)
-button_update_individual_scores.grid(row=2, column=1, padx=10, pady=5)
+button_update_individual_scores.grid(row=3, column=1, padx=10, pady=5)
 
 button_update_team_scores = tk.Button(window, text="Update Team Scores", command=update_team_scores)
-button_update_team_scores.grid(row=2, column=2, padx=10, pady=5)
+button_update_team_scores.grid(row=3, column=0, padx=10, pady=5)
 
 label_assign_individual = tk.Label(window, text="Assign Individual to Event:")
-label_assign_individual.grid(row=3, column=0, padx=10, pady=5)
+label_assign_individual.grid(row=4, column=0, padx=10, pady=5)
 
 dropdown_individual = tk.StringVar(window)
 dropdown_individual.set("Select Event")
 dropdown_individual.trace('w', lambda *args: assign_individual_or_team())
 dropdown_menu_individual = tk.OptionMenu(window, dropdown_individual, "Reading", "Longest Cod", "Chicken Broth", "Biggest Trout", "Murder")
-dropdown_menu_individual.grid(row=3, column=1, padx=10, pady=5)
-
-label_assign_team = tk.Label(window, text="Assign Team to Event:")
-label_assign_team.grid(row=4, column=0, padx=10, pady=5)
-
-dropdown_team = tk.StringVar(window)
-dropdown_team.set("Select Event")
-dropdown_team.trace('w', lambda *args: assign_individual_or_team())
-dropdown_menu_team = tk.OptionMenu(window, dropdown_team, "Reading", "Longest Cod", "Chicken Broth", "Biggest Trout", "Murder")
-dropdown_menu_team.grid(row=4, column=1, padx=10, pady=5)
-
-label_assign_name = tk.Label(window, text="Assign Individual/Team:")
-label_assign_name.grid(row=5, column=0, padx=10, pady=5)
-
-entry_assign_name = tk.Entry(window)
-entry_assign_name.grid(row=5, column=1, padx=10, pady=5)
+dropdown_menu_individual.grid(row=4, column=1, padx=10, pady=5)
 
 button_assign = tk.Button(window, text="Assign to Event", command=assign_to_event)
-button_assign.grid(row=5, column=2, padx=10, pady=5)
+button_assign.grid(row=6, column=2, padx=10, pady=5)
+
+dropdown_event_assignment = tk.StringVar(window)
+dropdown_event_assignment.set("Select Event")
+dropdown_menu_assignment = tk.OptionMenu(window, dropdown_event_assignment, *event_data)
+dropdown_menu_assignment.grid(row=6, column=3, padx=10, pady=5)
+
+label_assign_name = tk.Label(window, text="Assign Individual/Team:")
+label_assign_name.grid(row=6, column=0, padx=10, pady=5)
+
+entry_assign_name = tk.Entry(window)
+entry_assign_name.grid(row=6, column=1, padx=10, pady=5)
+
+button_assign = tk.Button(window, text="Assign to Event", command=assign_to_event)
+button_assign.grid(row=6, column=2, padx=10, pady=5)
+
+button_rank_teams = tk.Button(window, text="Rank Teams", command=rank_teams)
+button_rank_teams.grid(row=7, column=0, pady=10)
+
+button_rank_individuals = tk.Button(window, text="Rank Individuals", command=rank_individuals)
+button_rank_individuals.grid(row=8, column=0, pady=10)
 
 window.mainloop()
