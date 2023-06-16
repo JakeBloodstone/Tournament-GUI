@@ -10,6 +10,7 @@ selected_individual = None
 selected_team = None
 event_data = ["Reading", "Longest Coder", "Chicken Broth", "Jumping Big", "MurMys"]
 
+
 def load_individual_data():
     global individual_data
     try:
@@ -19,6 +20,7 @@ def load_individual_data():
                 individual_data = json.loads(data)
     except FileNotFoundError:
         pass
+
 
 def load_team_data():
     global team_data
@@ -33,33 +35,34 @@ def load_team_data():
     except FileNotFoundError:
         team_data = []
 
+
 def register_individual():
     if len(individual_data) >= 20:
-        messagebox.showerror("Error", "Maximum team limit reached (maximum is 4 teams).")
+        messagebox.showerror("Error", "Maximum individual limit reached (maximum is 20 individuals).")
         return
-    
+
     individual_window = tk.Toplevel(window)
     individual_window.title("Individual Registration")
 
     label_heading = tk.Label(individual_window, text="Individual Registration", font=("Arial", 16, "bold"))
     label_heading.pack(pady=10)
 
-def submit_registration():
-    team_name = entry_team_name.get()
-    members = entry_team_members.get().split(",")
-    event = dropdown_event.get()
+    def submit_registration():
+        name = entry_name.get()
+        score = entry_score.get()
+        event = dropdown_event.get()
 
-    if len(members) > 5:
-        messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
-        return
+        if not name or not score:
+            messagebox.showerror("Error", "Please fill in all the fields.")
+            return
 
-    team = {"team_name": team_name, "members": members, "total_score": 0, "event": event}
-    team_data.append(team)
-    json_data = json.dumps(team_data)
-    with open("team_data.json", "w") as file:
-        file.write(json_data)
-    messagebox.showinfo("Registration", "Team registration successful!")
-    team_window.destroy()
+        individual = {"name": name, "score": score, "event": event}
+        individual_data.append(individual)
+        json_data = json.dumps(individual_data)
+        with open("individual_data.json", "w") as file:
+            file.write(json_data)
+        messagebox.showinfo("Registration", "Individual registration successful!")
+        individual_window.destroy()
 
     label_name = tk.Label(individual_window, text="Name:")
     label_name.pack()
@@ -72,10 +75,10 @@ def submit_registration():
     entry_score.pack()
 
     label_event = tk.Label(individual_window, text="Event:")
-    label_event.grid(row=i+1, column=0, sticky="w")
+    label_event.pack()
     dropdown_event = tk.StringVar(individual_window)
     dropdown_event.set("Select Event")
-    dropdown_menu_event = tk.OptionMenu(individual_window, dropdown_event, "Reading", "Longest Coder", "Chicken Broth", "Jumping Big", "MurMys")
+    dropdown_menu_event = tk.OptionMenu(individual_window, dropdown_event, *event_data)
     dropdown_menu_event.pack()
 
     button_submit = tk.Button(individual_window, text="Submit", command=submit_registration)
@@ -85,7 +88,7 @@ def register_team():
     if len(team_data) >= 4:
         messagebox.showerror("Error", "Maximum team limit reached (maximum is 4 teams).")
         return
-    
+
     team_window = tk.Toplevel(window)
     team_window.title("Team Registration")
 
@@ -100,13 +103,13 @@ def register_team():
         if len(team_members) > 5:
             messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
             return
-        
+
         if len(team_members) < 5:
-            messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
+            messagebox.showerror("Error", "Minimum team size not met (minimum is 5 members).")
             return
-        
-        if len(team_name) > 4:
-            messagebox.showerror("Error", "Maximum team size exceeded (maximum is 5 members).")
+
+        if len(team_data) > 4:
+            messagebox.showerror("Error", "Maximum team limit exceeded (maximum is 4 teams).")
             return
 
         team = {"team_name": team_name, "members": team_members, "total_score": 0, "event": event}
@@ -131,11 +134,13 @@ def register_team():
     label_event.pack()
     dropdown_event = tk.StringVar(team_window)
     dropdown_event.set("Select Event")
-    dropdown_menu_event = tk.OptionMenu(team_window, dropdown_event, "Reading", "Longest Cod", "Chicken Broth", "Jumping Big", "MurMys")
+    dropdown_menu_event = tk.OptionMenu(team_window, dropdown_event, "Reading", "Longest Cod", "Chicken Broth",
+                                        "Jumping Big", "MurMys")
     dropdown_menu_event.pack()
 
     button_submit = tk.Button(team_window, text="Submit", command=submit_registration)
     button_submit.pack(pady=10)
+
 
 def display_individuals():
     individuals_window = tk.Toplevel(window)
@@ -147,6 +152,7 @@ def display_individuals():
     for individual in individual_data:
         label_name = tk.Label(individuals_window, text=individual["name"])
         label_name.pack()
+
 
 def display_teams():
     teams_window = tk.Toplevel(window)
@@ -169,6 +175,7 @@ def display_teams():
         label_team_divider = tk.Label(teams_window, text="-----------------------------")
         label_team_divider.pack(pady=5)
 
+
 def rank_teams():
     sorted_teams = sorted(team_data, key=itemgetter('total_score'), reverse=True)
     top_three_teams = sorted_teams[:3]
@@ -179,17 +186,17 @@ def rank_teams():
     label_heading.grid(row=0, column=0, columnspan=3, pady=10)
 
     for i, team in enumerate(top_three_teams):
-        label_team_name = tk.Label(rank_window, text=f"{i+1}. {team['team_name']} ({team['event']})")
-        label_team_name.grid(row=i+1, column=0, sticky="w")
+        label_team_name = tk.Label(rank_window, text=f"{i + 1}. {team['team_name']} ({team['event']})")
+        label_team_name.grid(row=i + 1, column=0, sticky="w")
 
         label_team_members = tk.Label(rank_window, text=f"Team Members: {', '.join(team['members'])}")
-        label_team_members.grid(row=i+1, column=1, sticky="w")
+        label_team_members.grid(row=i + 1, column=1, sticky="w")
 
         label_total_score = tk.Label(rank_window, text=f"Total Score: {team['total_score']}")
-        label_total_score.grid(row=i+1, column=2, sticky="w")
+        label_total_score.grid(row=i + 1, column=2, sticky="w")
 
         label_separator = tk.Label(rank_window, text="-" * 20)
-        label_separator.grid(row=i+2, column=0, columnspan=3, pady=5)
+        label_separator.grid(row=i + 2, column=0, columnspan=3, pady=5)
 
 
 def rank_individuals():
@@ -209,7 +216,7 @@ def rank_individuals():
         label_event.pack()
 
         for i, individual in enumerate(top_three_individuals):
-            label_name = tk.Label(rank_window, text=f"{i+1}. {individual['name']}")
+            label_name = tk.Label(rank_window, text=f"{i + 1}. {individual['name']}")
             label_name.pack()
 
             label_score = tk.Label(rank_window, text=f"Score: {individual['score']}")
@@ -217,6 +224,7 @@ def rank_individuals():
 
             label_separator = tk.Label(rank_window, text="-" * 20)
             label_separator.pack()
+
 
 def update_individual_scores():
     individuals_window = tk.Toplevel(window)
@@ -254,6 +262,7 @@ def update_individual_scores():
     button_submit = tk.Button(individuals_window, text="Submit", command=submit_scores)
     button_submit.pack(pady=10)
 
+
 def update_team_scores():
     teams_window = tk.Toplevel(window)
     teams_window.title("Update Team Scores")
@@ -290,6 +299,7 @@ def update_team_scores():
     button_submit = tk.Button(teams_window, text="Submit", command=submit_scores)
     button_submit.pack(pady=10)
 
+
 def assign_to_event():
     name = entry_assign_name.get()
     selected_event = dropdown_event_assignment.get()
@@ -315,6 +325,7 @@ def assign_to_event():
         messagebox.showinfo("Assignment", f"{selected_team['team_name']} assigned to {selected_event}")
     else:
         messagebox.showerror("Error", "No individual or team found with the specified name")
+
 
 def assign_individual_or_team():
     global selected_individual, selected_team
@@ -357,6 +368,7 @@ def assign_individual_or_team():
             dropdown_team.set("Select Event")
             selected_team = None
 
+
 window = tk.Tk()
 window.title("Event Registration")
 
@@ -392,7 +404,8 @@ label_assign_individual.grid(row=4, column=0, padx=10, pady=5)
 dropdown_individual = tk.StringVar(window)
 dropdown_individual.set("Select Event")
 dropdown_individual.trace('w', lambda *args: assign_individual_or_team())
-dropdown_menu_individual = tk.OptionMenu(window, dropdown_individual, "Reading", "Longest Cod", "Chicken Broth", "Biggest Trout", "Murder")
+dropdown_menu_individual = tk.OptionMenu(window, dropdown_individual, "Reading", "Longest Cod", "Chicken Broth",
+                                         "Biggest Trout", "Murder")
 dropdown_menu_individual.grid(row=4, column=1, padx=10, pady=5)
 
 button_assign = tk.Button(window, text="Assign to Event", command=assign_to_event)
